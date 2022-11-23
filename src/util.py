@@ -17,10 +17,13 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import urllib
+from base64 import b64encode
 from configparser import ConfigParser
 from os import path
 from pathlib import Path
 
+import requests
 from xdg import xdg_config_home
 
 PACKAGE_NAME = "caldav2pal"
@@ -29,6 +32,17 @@ PACKAGE_NAME = "caldav2pal"
 class Util:
     """! Utility functions.
     """
+
+    @staticmethod
+    def _basic_auth(username, password):
+        """! Convert a username and password into a HTTP Basic Auth token.
+
+        @param username  The username portion of the authentification.
+        @param password  The password portion of the authentification.
+        @return A token to be used for HTTP Basic Auth.
+        """
+        token = b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return f"Basic {token}"
 
     @staticmethod
     def get_config_file(config: Path | str) -> Path:
@@ -62,3 +76,26 @@ class Util:
         @return A path object with the full path of the pal event file.
         """
         return Path(path.expanduser(Path("~/.pal/") / event))
+
+    @staticmethod
+    def get_url(url: str) -> requests.models.Response | None:
+        """! Get the contents of the specified URL.
+
+        Both HTTP and HTTPS URLs are support, as is HTTP Basic Auth.
+
+        @param url  The URL to query.
+        @return A response object or None if the request failed.
+        """
+        parsed_url = urllib.parse.urlparse(url)
+
+        headers = None
+        if parsed_url.username is not None and parsed_url.password is not None:
+            headers = {"Authorization": Util._basic_auth(parsed_url.username, parsed_url.password)}
+
+        try:
+            response = requests.get(url, timeout=10, headers=headers)
+        except Exception as err:  # pylint: disable=broad-except
+            print(err)
+            return None
+
+        return response
