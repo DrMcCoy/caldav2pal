@@ -20,10 +20,12 @@
 import urllib
 from base64 import b64encode
 from configparser import ConfigParser
+from datetime import datetime, timedelta
 from os import path
 from pathlib import Path
 
 import requests
+from dateutil.parser import parse as parsedate
 from xdg import xdg_config_home
 
 PACKAGE_NAME = "caldav2pal"
@@ -99,3 +101,37 @@ class Util:
             return None
 
         return response
+
+    @staticmethod
+    def does_file_need_update(
+            file: Path | str,
+            response: requests.models.Response,
+            max_age: timedelta | None = None) -> bool:
+        """! Does a file need updating when compared to an URL resource?
+
+        This function checks the Last-Modified time of a requests response against the modifed
+        timestamp of a file to see if the URL resource is newer.
+
+        @param file      The file to check if it needs updating.
+        @param response  The requests response of an URL resource.
+        @param max_age   The max age of the file. If the file is older, force a True response.
+        @return True of the file needs updating, False otherwise.
+        """
+
+        # File doesn't exist or no Last-Modified field in the response -> Needs updating
+        if not path.exists(file) or "Last-Modified" not in response.headers:
+            return True
+
+        url_datetime = parsedate(response.headers["Last-Modified"]).astimezone()
+        file_datetime = datetime.fromtimestamp(path.getmtime(file)).astimezone()
+
+        # Last-Modified is newer than the file's modification time -> Needs updating
+        if url_datetime > file_datetime:
+            return True
+
+        # File is older than its maximum age -> Needs updating
+        if max_age is not None and datetime.now().astimezone() > (file_datetime + max_age):
+            return True
+
+        # File is a-okay!
+        return False
