@@ -1,0 +1,14 @@
+# Editor temp files
+.sw[po]
+.*.sw[po]
+*~
+
+# Build files
+/env/
+/build/
+/.mypy_cache
+*.egg-info/
+__pycache__/
+
+# Doxygen output files
+/doxygen/html/
