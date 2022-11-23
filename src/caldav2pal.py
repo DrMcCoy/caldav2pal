@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from calendars2events import convert_calendars_to_events
 from contacts2birthdays import convert_contacts_to_birthdays
 
 
@@ -24,6 +25,7 @@ def main() -> None:
     """! caldav2pal main function.
     """
     convert_contacts_to_birthdays()
+    convert_calendars_to_events()
 
 
 if __name__ == '__main__':
