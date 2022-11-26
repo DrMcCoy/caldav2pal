@@ -17,23 +17,53 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import email.utils
 import urllib
 from base64 import b64encode
 from configparser import ConfigParser
 from datetime import datetime, timedelta
+from importlib import metadata
 from os import path
 from pathlib import Path
+from typing import Any
 
 import requests
 from dateutil.parser import parse as parsedate
 from xdg import xdg_config_home
 
 PACKAGE_NAME = "caldav2pal"
+COPYRIGHT_YEARS = "2022"
 
 
 class Util:
     """! Utility functions.
     """
+
+    @staticmethod
+    def get_project_info() -> dict[str, Any]:
+        """! Get project metadata information.
+
+        @return A dict containing project metadata information.
+        """
+        project_metadata = metadata.metadata(PACKAGE_NAME)
+
+        info = {}  # type: dict[str, Any]
+        info["name"] = project_metadata["Name"]
+        info["version"] = project_metadata["Version"]
+        info["summary"] = project_metadata["Summary"]
+        info["years"] = COPYRIGHT_YEARS
+
+        info["url"] = {}
+        for i in project_metadata.get_all("Project-URL"):
+            parsed = i.split(", ", 1)
+            info["url"][parsed[0]] = parsed[1]
+
+        info["authors"] = []
+        for address in project_metadata["Author-email"].split(", "):
+            parsed = email.utils.parseaddr(address)
+            info["authors"].append(f"{parsed[0]} <{parsed[1]}>")
+
+        return info
 
     @staticmethod
     def _basic_auth(username, password):
