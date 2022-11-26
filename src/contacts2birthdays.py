@@ -35,17 +35,16 @@ def _convert_contact(pal_file: TextIO, contact: Contact) -> int:
     """
     counter = 0
 
-    if "bday" in contact.contents:
-        for bday in contact.contents["bday"]:
-            bday_date = datetime.strptime(bday.value, "%Y-%m-%d")  # type: ignore
+    for bday in contact.contents.get("bday", []):
+        bday_date = datetime.strptime(bday.value, "%Y-%m-%d")  # type: ignore
 
-            age_str = ""
-            if str(bday_date.year) not in bday.params.get("X-APPLE-OMIT-YEAR", []):  # type: ignore
-                age_str = f", {bday_date.year} (!{bday_date.year}!)"
+        age_str = ""
+        if str(bday_date.year) not in bday.params.get("X-APPLE-OMIT-YEAR", []):  # type: ignore
+            age_str = f", {bday_date.year} (!{bday_date.year}!)"
 
-            pal_file.write(f"0000{bday_date.month:02d}{bday_date.day:02d} {contact.fn.value}{age_str}\n")
+        pal_file.write(f"0000{bday_date.month:02d}{bday_date.day:02d} {contact.fn.value}{age_str}\n")
 
-            counter = counter + 1
+        counter = counter + 1
 
     return counter
 
