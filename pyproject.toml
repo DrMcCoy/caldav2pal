@@ -4,7 +4,7 @@ requires = ["setuptools", "wheel"]
 [project]
 name = "caldav2pal"
 description = "A FLOSS utility to convert CalDAV/CardDAV to pal"
-version = "0.0.0"
+version = "0.1.0"
 authors = [
 	{ name = 'Sven "DrMcCoy" Hesse', email = "drmccoy@drmccoy.de" }
 ]

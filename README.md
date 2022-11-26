@@ -67,7 +67,7 @@ options.
 ```
 usage: caldav2pal [-h] [-v]
 
-caldav2pal 0.0.0 -- A FLOSS utility to convert CalDAV/CardDAV to pal
+caldav2pal 0.1.0 -- A FLOSS utility to convert CalDAV/CardDAV to pal
 
 options:
   -h, --help     show this help message and exit
