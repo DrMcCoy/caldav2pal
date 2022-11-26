@@ -30,6 +30,12 @@ from util import Util
 def _is_all_day(event: icalendar.cal.Event) -> bool:
     """! Is this an all-day event?
     """
+
+    # An all-day event stores the start and end timestamp as a datetime.date object, while other
+    # events use datetime.datetime. So we need to distinguish between datetime and date here.
+    # But since datetime inherits from date, we can't use use isinstance(..., date): that would
+    # evaluate to true for datetime as well.
+    #
     # pylint: disable=unidiomatic-typecheck
     return type(event["DTSTART"].dt) is date and type(event["DTEND"].dt) is date
 
@@ -43,6 +49,9 @@ def _is_multiple_days(event) -> bool:
 def _get_start_datetime(event: icalendar.cal.Event) -> datetime:
     """! Return the event's start datetime in the local timezone.
     """
+
+    # Expand date to datetime, by appending 00:00:00. See above for the unidiomatic-typecheck.
+    #
     # pylint: disable=unidiomatic-typecheck
     if type(event["DTSTART"].dt) is date:
         return datetime.combine(event["DTSTART"].dt, datetime.min.time()).astimezone()
@@ -53,6 +62,12 @@ def _get_start_datetime(event: icalendar.cal.Event) -> datetime:
 def _get_end_datetime(event: icalendar.cal.Event) -> datetime:
     """! Return the event's end datetime in the local timezone.
     """
+
+    # If this is an all-day event, the end timestamp is stored as a date, and in that case, the
+    # end date is *exclusive*. So to expand such a date into a datetime, append 00:00:00 and
+    # subtract a single second, so that the datetime is inclusive again. See above for that
+    # unidiomatic-typecheck.
+    #
     # pylint: disable=unidiomatic-typecheck
     if type(event["DTEND"].dt) is date:
         end_datetime = datetime.combine(event["DTEND"].dt, datetime.min.time()).astimezone()
@@ -60,8 +75,11 @@ def _get_end_datetime(event: icalendar.cal.Event) -> datetime:
     else:
         end_datetime = event["DTEND"].dt.astimezone()
 
+    # Make sure the end is never before the start
     start_datetime = _get_start_datetime(event)
-    return start_datetime if start_datetime > end_datetime else end_datetime
+    end_datetime = start_datetime if start_datetime > end_datetime else end_datetime
+
+    return end_datetime
 
 
 def _convert_event(pal_file: TextIO, event: icalendar.cal.Event) -> None:
@@ -71,9 +89,12 @@ def _convert_event(pal_file: TextIO, event: icalendar.cal.Event) -> None:
     @param event     The event to convert.
     """
 
+    # Name of the event. Add a placeholder text if empty
     name = event["SUMMARY"]
     if name is None or name.isspace() or len(name) == 0:
         name = "[Event without title]"
+
+    # Get start and end, and split them into date and time
 
     start_datetime = _get_start_datetime(event)
     end_datetime = _get_end_datetime(event)
@@ -86,13 +107,17 @@ def _convert_event(pal_file: TextIO, event: icalendar.cal.Event) -> None:
 
     if _is_all_day(event):
         if _is_multiple_days(event):
+            # An all-day event that goes over multiple days
             pal_file.write(f"DAILY:{start_date}:{end_date} {name}\n")
         else:
+            # An all-day event that occurs for a single day
             pal_file.write(f"{start_date} {name}\n")
     else:
         if _is_multiple_days(event):
+            # An event with a start time that goes beyond the end of the day
             pal_file.write(f"{start_date} [{start_time}] {name}\n")
         else:
+            # An event which starts and ends in the same day
             pal_file.write(f"{start_date} [{start_time}-{end_time}] {name}\n")
 
 
@@ -113,22 +138,28 @@ def _convert_calendar(calendar: SectionProxy, section_name: str) -> None:
     print(f"Name: {name}")
     print(f"Shorthand: {shorthand}")
 
+    # Section is similar to contacts2birthdays.py, but not a good candidate to unify
     # pylint: disable=duplicate-code
 
+    # Make sure we have all the data we need
     if url is None or pal is None or name is None or shorthand is None:
         print("Malformed, skipping")
         return
 
+    # Try to download the calendar. If it fails, bail
     response = Util.get_url(url)
     if response is None:
         return
 
     pal_path = Util.get_pal_file(pal)
 
+    # A calendar needs updating if the URL is newer or the file is older than 180 days
     if not Util.does_file_need_update(pal_path, response, timedelta(days=180)):
         print("Source ics is not newer than pal file")
         return
 
+    # We expand recurring events one year into the past and one year into the future. To
+    # make sure future events don't "run out", the update-check above triggers on 180 days.
     start_date = datetime.now() - timedelta(days=365)
     end_date = datetime.now() + timedelta(days=365)
 
@@ -136,6 +167,8 @@ def _convert_calendar(calendar: SectionProxy, section_name: str) -> None:
 
     with open(pal_path, "w", encoding="utf-8") as pal_file:
         pal_file.write(f"{shorthand} {name}\n")
+
+        # Read and expand the events, then convert them all in sequence
 
         ical = icalendar.Calendar.from_ical(response.text)
         events = recurring_ical_events.of(ical).between(start_date, end_date)
@@ -158,5 +191,6 @@ def convert_calendars_to_events() -> None:
         print("No calendars.conf exists, skipping converting calendars to events")
         return
 
+    # Run through all the sections in the config file
     for section in config.sections():
         _convert_calendar(config[section], section)

@@ -53,11 +53,13 @@ class Util:
         info["summary"] = project_metadata["Summary"]
         info["years"] = COPYRIGHT_YEARS
 
+        # Project URLs are stored with the "type" information pasted in front
         info["url"] = {}
         for i in project_metadata.get_all("Project-URL"):
             parsed = i.split(", ", 1)
             info["url"][parsed[0]] = parsed[1]
 
+        # Authors are stored in an email address format, pasted together into one string
         info["authors"] = []
         for address in project_metadata["Author-email"].split(", "):
             parsed = email.utils.parseaddr(address)

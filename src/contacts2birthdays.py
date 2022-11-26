@@ -35,13 +35,18 @@ def _convert_contact(pal_file: TextIO, contact: Contact) -> int:
     """
     counter = 0
 
+    # For each contact, run through its list of birthday dates
     for bday in contact.contents.get("bday", []):
+        # Parse the date
         bday_date = datetime.strptime(bday.value, "%Y-%m-%d")  # type: ignore
 
+        # If the year does not appears in the "fake" years list to omit, use it. Otherwise, don't
         age_str = ""
         if str(bday_date.year) not in bday.params.get("X-APPLE-OMIT-YEAR", []):  # type: ignore
+            # Birth year and special marker for pal to calculate the age from the birth year
             age_str = f", {bday_date.year} (!{bday_date.year}!)"
 
+        # The birthday occurs every year on that month and day. Also add the contact name, and their age if known
         pal_file.write(f"0000{bday_date.month:02d}{bday_date.day:02d} {contact.fn.value}{age_str}\n")
 
         counter = counter + 1
@@ -60,6 +65,7 @@ def _convert_contacts(contacts: SectionProxy, section_name: str) -> None:
     name = contacts.get("name", None)
     shorthand = contacts.get("shorthand", None)
 
+    # Section is similar to calendars2events.py, but not a good candidate to unify
     # pylint: disable=duplicate-code
 
     print(f"=== {section_name} ===")
@@ -68,16 +74,19 @@ def _convert_contacts(contacts: SectionProxy, section_name: str) -> None:
     print(f"Name: {name}")
     print(f"Shorthand: {shorthand}")
 
+    # Make sure we have all the data we need
     if url is None or pal is None or name is None or shorthand is None:
         print("Malformed, skipping")
         return
 
+    # Try to download the calendar. If it fails, bail
     response = Util.get_url(url)
     if response is None:
         return
 
     pal_path = Util.get_pal_file(pal)
 
+    # If the pal event file is older than the URL, it needs updating
     if not Util.does_file_need_update(pal_path, response):
         print("Source vcard is not newer than pal file")
         return
@@ -86,6 +95,8 @@ def _convert_contacts(contacts: SectionProxy, section_name: str) -> None:
 
     with open(pal_path, "w", encoding="utf-8") as pal_file:
         pal_file.write(f"{shorthand} {name}\n")
+
+        # Read the contacts file, then convert them all in sequence
 
         vcard = vcard_read(response.text)
         while (contact := next(vcard, None)) is not None:
@@ -105,5 +116,6 @@ def convert_contacts_to_birthdays() -> None:
         print("No contacts.conf exists, skipping converting contacts to birthdays")
         return
 
+    # Run through all the sections in the config file
     for section in config.sections():
         _convert_contacts(config[section], section)
