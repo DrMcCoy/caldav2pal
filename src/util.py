@@ -66,7 +66,7 @@ class Util:
         return info
 
     @staticmethod
-    def _basic_auth(username, password):
+    def _basic_auth(username: str, password: str) -> str:
         """! Convert a username and password into a HTTP Basic Auth token.
 
         @param username  The username portion of the authentification.
