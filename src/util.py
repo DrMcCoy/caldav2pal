@@ -26,6 +26,7 @@ from importlib import metadata
 from os import path
 from pathlib import Path
 from typing import Any
+from urllib.request import url2pathname
 
 import requests
 from dateutil.parser import parse as parsedate
@@ -38,6 +39,17 @@ COPYRIGHT_YEARS = "2022"
 class Util:
     """! Utility functions.
     """
+
+    @staticmethod
+    def _basic_auth(username: str, password: str) -> str:
+        """! Convert a username and password into a HTTP Basic Auth token.
+
+        @param username  The username portion of the authentification.
+        @param password  The password portion of the authentification.
+        @return A token to be used for HTTP Basic Auth.
+        """
+        token = b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+        return f"Basic {token}"
 
     @staticmethod
     def get_project_info() -> dict[str, Any]:
@@ -66,17 +78,6 @@ class Util:
             info["authors"].append(f"{parsed[0]} <{parsed[1]}>")
 
         return info
-
-    @staticmethod
-    def _basic_auth(username: str, password: str) -> str:
-        """! Convert a username and password into a HTTP Basic Auth token.
-
-        @param username  The username portion of the authentification.
-        @param password  The password portion of the authentification.
-        @return A token to be used for HTTP Basic Auth.
-        """
-        token = b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
-        return f"Basic {token}"
 
     @staticmethod
     def get_config_file(config: Path | str) -> Path:
