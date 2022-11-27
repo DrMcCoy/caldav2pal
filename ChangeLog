@@ -1,3 +1,8 @@
+Sunday, 2022-11-27 (Version 0.2.0)
+	- Added support for file:// URLs
+	- Commented the code a bit more
+	- Performed minor code cleanup
+
 Saturday, 2022-11-26 (Version 0.1.0)
 	- Implemented converting calendar events to pal
 	- Implemented converting contact birthdays to pal
