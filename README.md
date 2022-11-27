@@ -114,8 +114,9 @@ shorthand = mc
 
 You can add as many sections as you like, # for comments are supported
 
-Currently, only URLs with the schema `http://` and `https://` are supported.
-However, you can specify a username and password for HTTP Basic Auth:
+Currently, only URLs with the schema `http://`, `https://` and `file://` are
+supported. However, for `http://` and `https://`, you can specify a username
+and password for HTTP Basic Auth:
 ```
 url = https://sven:mysecretpassword@www.example.com/myCalendar.ics
 ```

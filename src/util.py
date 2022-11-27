@@ -18,12 +18,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import email.utils
+import os
 import urllib
 from base64 import b64encode
 from configparser import ConfigParser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from importlib import metadata
-from os import path
 from pathlib import Path
 from typing import Any
 from urllib.request import url2pathname
@@ -34,6 +34,62 @@ from xdg import xdg_config_home
 
 PACKAGE_NAME = "caldav2pal"
 COPYRIGHT_YEARS = "2022"
+
+
+class _LocalFileAdapter(requests.adapters.BaseAdapter):
+    """! Protocol Adapter to allow Requests to GET file:// URLs.
+    """
+
+    @staticmethod
+    def _chkpath(method, path):
+        """! Return an HTTP status for the given filesystem path.
+        """
+        if method.lower() in ('put', 'delete'):
+            return 501, "Not Implemented"
+        if method.lower() not in ('get', 'head'):
+            return 405, "Method Not Allowed"
+        if os.path.isdir(path):
+            return 400, "Path Not A File"
+        if not os.path.isfile(path):
+            return 404, "File Not Found"
+        if not os.access(path, os.R_OK):
+            return 403, "Access Denied"
+
+        return 200, "OK"
+
+    def send(self, request, stream=False, timeout=None,  # pylint: disable=unused-argument,too-many-arguments
+             verify=True, cert=None, proxies=None):      # pylint: disable=unused-argument,too-many-arguments
+        """! Return the file specified by the given request.
+        """
+        path = os.path.normcase(os.path.normpath(url2pathname(request.path_url)))
+        response = requests.Response()
+
+        response.status_code, response.reason = self._chkpath(request.method, path)
+        if response.status_code == 200 and request.method.lower() != 'head':
+            try:
+                response.raw = open(path, 'rb')  # pylint: disable=consider-using-with
+            except (OSError, IOError) as err:
+                response.status_code = 500
+                response.reason = str(err)
+
+            try:
+                path_datetime = datetime.fromtimestamp(os.path.getmtime(path)).astimezone(tz=timezone.utc)
+                response.headers["Last-Modified"] = path_datetime.isoformat()
+            except Exception:  # pylint: disable=broad-except
+                pass
+
+        if isinstance(request.url, bytes):
+            response.url = request.url.decode('utf-8')
+        else:
+            response.url = request.url
+
+        response.request = request
+        response.connection = self
+
+        return response
+
+    def close(self):
+        pass
 
 
 class Util:
@@ -96,7 +152,7 @@ class Util:
         @return A ConfigParser object if the config file exists, None otherwise.
         """
         config_file = Util.get_config_file(config)
-        if not path.exists(config_file):
+        if not os.path.exists(config_file):
             return None
 
         config_parser = ConfigParser()
@@ -110,7 +166,7 @@ class Util:
         @param event  The pal event filename we want.
         @return A path object with the full path of the pal event file.
         """
-        return Path(path.expanduser(Path("~/.pal/") / event))
+        return Path(os.path.expanduser(Path("~/.pal/") / event))
 
     @staticmethod
     def get_url(url: str) -> requests.models.Response | None:
@@ -127,8 +183,11 @@ class Util:
         if parsed_url.username is not None and parsed_url.password is not None:
             headers = {"Authorization": Util._basic_auth(parsed_url.username, parsed_url.password)}
 
+        requests_session = requests.session()
+        requests_session.mount('file://', _LocalFileAdapter())
+
         try:
-            response = requests.get(url, timeout=10, headers=headers)
+            response = requests_session.get(url, timeout=10, headers=headers)
         except Exception as err:  # pylint: disable=broad-except
             print(err)
             return None
@@ -152,11 +211,11 @@ class Util:
         """
 
         # File doesn't exist or no Last-Modified field in the response -> Needs updating
-        if not path.exists(file) or "Last-Modified" not in response.headers:
+        if not os.path.exists(file) or "Last-Modified" not in response.headers:
             return True
 
         url_datetime = parsedate(response.headers["Last-Modified"]).astimezone()
-        file_datetime = datetime.fromtimestamp(path.getmtime(file)).astimezone()
+        file_datetime = datetime.fromtimestamp(os.path.getmtime(file)).astimezone()
 
         # Last-Modified is newer than the file's modification time -> Needs updating
         if url_datetime > file_datetime:
