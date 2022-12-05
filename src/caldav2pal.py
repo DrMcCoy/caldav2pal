@@ -44,6 +44,8 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("-v", "--version", action="version",
                         version=version,
                         help="print the version and exit")
+    parser.add_argument("-n", "--no-default", required=False, action="store_true",
+                        help="don't read the default config files")
 
     return parser.parse_args()
 
@@ -51,10 +53,11 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     """! caldav2pal main function.
     """
-    _parse_args()
+    args = _parse_args()
 
-    convert_contacts_to_birthdays()
-    convert_calendars_to_events()
+    if not args.no_default:
+        convert_contacts_to_birthdays()
+        convert_calendars_to_events()
 
 
 if __name__ == '__main__':
