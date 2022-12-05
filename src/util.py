@@ -145,19 +145,27 @@ class Util:
         return xdg_config_home() / PACKAGE_NAME / config
 
     @staticmethod
-    def get_config(config: Path | str) -> ConfigParser | None:
-        """! Get the specific config file within our config directory as a ConfigParser object.
+    def open_config(config_file: Path | str) -> ConfigParser | None:
+        """! Open this path as a ConfigParser object.
 
-        @param config  The config filename we want.
-        @return A ConfigParser object if the config file exists, None otherwise.
+        @param config_file  The path to the config we want to open.
+        @return A ConfigParser object if the file exists, None otherwise.
         """
-        config_file = Util.get_config_file(config)
         if not os.path.exists(config_file):
             return None
 
         config_parser = ConfigParser()
         config_parser.read(config_file)
         return config_parser
+
+    @staticmethod
+    def get_config(config: Path | str) -> ConfigParser | None:
+        """! Get the specific config file within our config directory as a ConfigParser object.
+
+        @param config  The config filename we want.
+        @return A ConfigParser object if the config file exists, None otherwise.
+        """
+        return Util.open_config(Util.get_config_file(config))
 
     @staticmethod
     def get_pal_file(event: Path | str) -> Path:
