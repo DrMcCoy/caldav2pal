@@ -46,6 +46,10 @@ def _parse_args() -> argparse.Namespace:
                         help="print the version and exit")
     parser.add_argument("-n", "--no-default", required=False, action="store_true",
                         help="don't read the default config files")
+    parser.add_argument("-c", "--calendars-config", required=False,
+                        help="(additionally) use this calendars config")
+    parser.add_argument("-C", "--contacts-config", required=False,
+                        help="(additionally) use this contacts config")
 
     return parser.parse_args()
 
@@ -58,6 +62,11 @@ def main() -> None:
     if not args.no_default:
         convert_contacts_to_birthdays()
         convert_calendars_to_events()
+
+    if args.contacts_config is not None:
+        convert_contacts_to_birthdays(args.contacts_config)
+    if args.calendars_config is not None:
+        convert_calendars_to_events(args.calendars_config)
 
 
 if __name__ == '__main__':

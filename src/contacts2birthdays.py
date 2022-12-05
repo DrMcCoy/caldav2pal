@@ -19,6 +19,7 @@
 
 from configparser import SectionProxy
 from datetime import datetime
+from pathlib import Path
 from typing import TextIO
 
 from vobject import readComponents as vcard_read  # type: ignore
@@ -105,15 +106,17 @@ def _convert_contacts(contacts: SectionProxy, section_name: str) -> None:
     print(f"{counter} birthday(s) converted")
 
 
-def convert_contacts_to_birthdays() -> None:
+def convert_contacts_to_birthdays(config_file: str | None = None) -> None:
     """! Converts CardDAV contacts to birthdays.
 
     Contacts are defined in our contacts.conf config file, and each contact file is downloaded to have
     all contact birthday dates extracted and converted into a pal event file listing the birthdays.
     """
-    config = Util.get_config("contacts.conf")
+    config_path = Path(config_file) if config_file is not None else Util.get_config_file("contacts.conf")
+
+    config = Util.open_config(config_path)
     if config is None:
-        print("No contacts.conf exists, skipping converting contacts to birthdays")
+        print(f"Can't open file '{config_path}', skipping converting contacts to birthdays")
         return
 
     # Run through all the sections in the config file

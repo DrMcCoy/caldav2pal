@@ -19,6 +19,7 @@
 
 from configparser import SectionProxy
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import TextIO
 
 import icalendar  # type: ignore
@@ -180,15 +181,17 @@ def _convert_calendar(calendar: SectionProxy, section_name: str) -> None:
     print(f"{counter} event(s) converted")
 
 
-def convert_calendars_to_events() -> None:
+def convert_calendars_to_events(config_file: str | None = None) -> None:
     """! Converts CalDAV calendars to events.
 
     Calendars are defined in our caldendars.conf config file, and each calendar file is downloaded to have
     all event extracted and converted into a pal event file.
     """
-    config = Util.get_config("calendars.conf")
+    config_path = Path(config_file) if config_file is not None else Util.get_config_file("calendars.conf")
+
+    config = Util.open_config(config_path)
     if config is None:
-        print("No calendars.conf exists, skipping converting calendars to events")
+        print(f"Can't open file '{config_path}', skipping converting calendars to events")
         return
 
     # Run through all the sections in the config file
