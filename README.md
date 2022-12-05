@@ -61,17 +61,19 @@ See the `pyproject.toml` for project dependencies.
 Usage
 -----
 
-At the moment, caldav2pal doesn't really offer much in terms of command line
-options.
-
 ```
-usage: caldav2pal [-h] [-v]
+usage: caldav2pal [-h] [-v] [-n] [-c CALENDARS_CONFIG] [-C CONTACTS_CONFIG]
 
 caldav2pal 0.2.0 -- A FLOSS utility to convert CalDAV/CardDAV to pal
 
 options:
-  -h, --help     show this help message and exit
-  -v, --version  print the version and exit
+  -h, --help            show this help message and exit
+  -v, --version         print the version and exit
+  -n, --no-default      don't read the default config files
+  -c CALENDARS_CONFIG, --calendars-config CALENDARS_CONFIG
+                        (additionally) use this calendars config
+  -C CONTACTS_CONFIG, --contacts-config CONTACTS_CONFIG
+                        (additionally) use this contacts config
 ```
 
 
