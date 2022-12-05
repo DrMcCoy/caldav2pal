@@ -1,3 +1,8 @@
+Monday, 2022-12-05 (Version 0.3.0)
+	- Added command line option -C / --contacts-config
+	- Added command line option -c / --calendars-config
+	- Added command line option -n / --no-default
+
 Sunday, 2022-11-27 (Version 0.2.0)
 	- Added support for file:// URLs
 	- Commented the code a bit more

@@ -64,7 +64,7 @@ Usage
 ```
 usage: caldav2pal [-h] [-v] [-n] [-c CALENDARS_CONFIG] [-C CONTACTS_CONFIG]
 
-caldav2pal 0.2.0 -- A FLOSS utility to convert CalDAV/CardDAV to pal
+caldav2pal 0.3.0 -- A FLOSS utility to convert CalDAV/CardDAV to pal
 
 options:
   -h, --help            show this help message and exit
